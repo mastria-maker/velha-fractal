@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo da Velha Fractal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Custom Tailwind Config for Theme Colors -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#0b0f19',
+              card: '#161e2e',
+              border: '#2a364f',
+              playerX: '#ef4444',
+              playerO: '#06b6d4',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Segoe UI', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar & Smooth Animations */
+    body {
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Sub-board Overlay Animation */
+    @keyframes popIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      70% { transform: scale(1.1); opacity: 0.9; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* Subtle Glassmorphism Card Effect */
+    .glass-card {
+      background: rgba(22, 30, 46, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-4 selection:bg-cyan-500 selection:text-white">
+
+  <!-- Header / Title Banner -->
+  <header class="w-full max-w-2xl text-center my-4">
+    <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-purple-400 to-cyan-400">
+      Jogo da Velha Fractal
+    </h1>
+    <p class="text-slate-400 text-xs md:text-sm mt-1">Ultimate Tic-Tac-Toe • Conquiste os minitabuleiros para vencer</p>
+  </header>
+
+  <!-- MAIN CONTAINER WITH SCREENS -->
+  <main class="w-full max-w-2xl flex-grow flex items-center justify-center">
+
+    <!-- SCREEN 1: TELA INICIAL (SETUP DE JOGADORES) -->
+    <section id="startScreen" class="w-full glass-card p-6 md:p-10 rounded-2xl shadow-2xl transition-all duration-300">
+      <div class="text-center mb-8">
+        <h2 class="text-2xl font-bold text-white mb-2">Identificação dos Jogadores</h2>
+        <p class="text-slate-400 text-sm">Digite os nomes dos jogadores para dar início à partida.</p>
+      </div>
+
+      <form id="startForm" onsubmit="event.preventDefault(); startGame();" class="space-y-6">
+        <!-- Jogador X Input -->
+        <div class="relative">
+          <label for="inputPlayerX" class="block text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400 text-xs font-black">X</span>
+            Jogador ( X )
+          </label>
+          <input 
+            type="text" 
+            id="inputPlayerX" 
+            placeholder="Digite o nome do jogador X"
+            value="" 
+            autocomplete="off"
+            class="w-full bg-slate-900/80 border border-slate-700 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none transition-all duration-200"
+          >
+        </div>
+
+        <!-- Jogador O Input -->
+        <div class="relative">
+          <label for="inputPlayerO" class="block text-sm font-semibold text-cyan-400 mb-2 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-black">O</span>
+            Jogador ( O )
+          </label>
+          <input 
+            type="text" 
+            id="inputPlayerO" 
+            placeholder="Digite o nome do jogador O"
+            value="" 
+            autocomplete="off"
+            class="w-full bg-slate-900/80 border border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none transition-all duration-200"
+          >
+        </div>
+
+        <!-- Regras resumidas -->
+        <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-xs text-slate-400 space-y-1">
+          <p class="font-semibold text-slate-300">💡 Como funciona esta partida:</p>
+          <p>• O tabuleiro é composto por 9 mini-tabuleiros 3x3.</p>
+          <p>• <strong>Regra Ativa:</strong> Escolha livre! Você pode jogar em qualquer casa vazia de qualquer tabuleiro disponível a cada rodada.</p>
+        </div>
+
+        <!-- Botão Começar -->
+        <button 
+          type="submit"
+          class="w-full bg-gradient-to-r from-red-500 to-cyan-500 hover:from-red-600 hover:to-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-cyan-500/20 active:scale-[0.99] transition-all duration-200 text-lg flex items-center justify-center gap-2"
+        >
+          <span>Começar Jogo</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </form>
+    </section>
+
+
+    <!-- SCREEN 2: TELA DO TABULEIRO (GAMEPLAY) -->
+    <section id="gameScreen" class="w-full hidden flex-col items-center gap-4">
+      
+      <!-- Painel de Informações do Jogo -->
+      <div class="w-full glass-card p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 border border-slate-800">
+        <!-- Cronômetro -->
+        <div class="flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-xl border border-slate-800">
+          <svg class="w-5 h-5 text-amber-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Tempo:</span>
+          <span id="timerDisplay" class="font-mono text-lg font-bold text-amber-400">00:00</span>
+        </div>
+
+        <!-- Indicador de Vez -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium uppercase tracking-wider hidden sm:inline">Vez de:</span>
+          <div id="turnBadge" class="px-4 py-1.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 shadow-inner transition-all duration-300">
+            <!-- Dinâmico via JS -->
+          </div>
+        </div>
+
+        <!-- Botão Reiniciar Partida -->
+        <button 
+          onclick="restartGameToSetup()"
+          class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl transition-all duration-200 border border-slate-700 flex items-center gap-1"
+          title="Sair / Reiniciar"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span class="hidden sm:inline">Reiniciar</span>
+        </button>
+      </div>
+
+      <!-- Tabuleiro Principal 3x3 (Contém 9 sub-tabuleiros) -->
+      <div 
+        id="mainBoard" 
+        class="w-full aspect-square max-w-[520px] bg-slate-900 p-2 sm:p-3 rounded-2xl grid grid-cols-3 gap-2 sm:gap-3 border border-slate-800 shadow-2xl"
+      >
+        <!-- Gerado via JavaScript -->
+      </div>
+
+    </section>
+
+
+    <!-- SCREEN 3: TELA DE PARABÉNS (VICTORY) -->
+    <section id="victoryScreen" class="w-full glass-card p-6 md:p-10 rounded-2xl shadow-2xl text-center hidden flex-col items-center justify-center animate-pop">
+      
+      <!-- Ícone de Troféu / Celebração -->
+      <div class="relative mb-6">
+        <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-500/20 to-yellow-300/30 flex items-center justify-center border border-amber-500/40 shadow-lg shadow-amber-500/10">
+          <svg class="w-14 h-14 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Mensagem de Vitória -->
+      <h2 id="victoryTitle" class="text-3xl md:text-4xl font-extrabold text-white mb-2">
+        Parabéns!
+      </h2>
+
+      <p id="victoryMessage" class="text-lg md:text-xl text-slate-300 font-semibold mb-6">
+        <!-- Nome do vencedor e texto dinâmico -->
+      </p>
+
+      <!-- Card com Detalhes do Tempo -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl px-6 py-4 mb-8 max-w-sm w-full flex items-center justify-center gap-3">
+        <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="text-left">
+          <span class="block text-xs text-slate-400 uppercase font-medium">Tempo total de jogo</span>
+          <span id="victoryTimeText" class="text-base font-bold text-amber-400">00 minutos e 00 segundos</span>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+        <button 
+          onclick="resetGameSamePlayers()" 
+          class="flex-1 bg-gradient-to-r from-red-500 to-cyan-500 hover:from-red-600 hover:to-cyan-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-all duration-200"
+        >
+          Jogar Novamente
+        </button>
+        <button 
+          onclick="restartGameToSetup()" 
+          class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-3.5 px-4 rounded-xl border border-slate-700 transition-all duration-200"
+        >
+          Novos Jogadores
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-xs text-slate-500">
+    Jogo da Velha Fractal • Desenvolvido para uso educacional e interativo
+  </footer>
+
+  <!-- SCRIPT DE LÓGICA DO JOGO -->
+  <script>
+    // --- COMBINAÇÕES VITORIOSAS NO TABULEIRO 3x3 ---
+    const WINNING_COMBOS = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // Linhas
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // Colunas
+      [0, 4, 8], [2, 4, 6]             // Diagonais
+    ];
+
+    // --- ESTADO DO JOGO ---
+    let players = {
+      X: 'Jogador X',
+      O: 'Jogador O'
+    };
+
+    let currentPlayer = 'X';
+    let boards = [];          // Matriz 9x9 (Array de 9 arrays com 9 posições)
+    let subBoardWinners = []; // Array de 9 posições com null, 'X', 'O' ou 'TIE'
+    let isGameActive = false;
+
+    // Cronômetro Variables
+    let timerInterval = null;
+    let secondsElapsed = 0;
+
+    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+    window.addEventListener('DOMContentLoaded', () => {
+      // Garante que a tela inicial esteja ativa
+      showScreen('startScreen');
+    });
+
+    // --- GERENCIAMENTO DE TELAS ---
+    function showScreen(screenId) {
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('gameScreen').classList.remove('flex');
+      document.getElementById('victoryScreen').classList.add('hidden');
+      document.getElementById('victoryScreen').classList.remove('flex');
+
+      const target = document.getElementById(screenId);
+      target.classList.remove('hidden');
+      if (screenId === 'gameScreen' || screenId === 'victoryScreen') {
+        target.classList.add('flex');
+      }
+    }
+
+    // --- INICIAR NOVO JOGO A PARTIR DA FORM ---
+    function startGame() {
+      const nameXInput = document.getElementById('inputPlayerX').value.trim();
+      const nameOInput = document.getElementById('inputPlayerO').value.trim();
+
+      // Atribui os nomes ou usa o padrão se deixado em branco
+      players.X = nameXInput !== '' ? nameXInput : 'Jogador X';
+      players.O = nameOInput !== '' ? nameOInput : 'Jogador O';
+
+      initGameState();
+      showScreen('gameScreen');
+      startTimer();
+      renderBoard();
+      updateTurnBadge();
+    }
+
+    // --- INICIALIZAR / ZERAR DADOS DA PARTIDA ---
+    function initGameState() {
+      // Cria 9 sub-tabuleiros com 9 células nulas cada
+      boards = Array.from({ length: 9 }, () => Array(9).fill(null));
+      subBoardWinners = Array(9).fill(null);
+      currentPlayer = 'X';
+      isGameActive = true;
+    }
+
+    // --- LÓGICA DO CRONÔMETRO ---
+    function startTimer() {
+      stopTimer();
+      secondsElapsed = 0;
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function updateTimerDisplay() {
+      const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+      const secs = String(secondsElapsed % 60).padStart(2, '0');
+      document.getElementById('timerDisplay').textContent = `${mins}:${secs}`;
+    }
+
+    function getFormattedDurationText(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      const minStr = String(mins).padStart(2, '0');
+      const secStr = String(secs).padStart(2, '0');
+
+      const minLabel = mins === 1 ? 'minuto' : 'minutos';
+      const secLabel = secs === 1 ? 'segundo' : 'segundos';
+
+      return `${minStr} ${minLabel} e ${secStr} ${secLabel}`;
+    }
+
+    // --- REGRAS DO JOGO DA VELHA FRACTAL ---
+
+    // Checa se uma matriz de 9 elementos possui um vencedor ('X', 'O', 'TIE' ou null)
+    function checkGridWinner(grid) {
+      for (const [a, b, c] of WINNING_COMBOS) {
+        if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
+          return grid[a];
+        }
+      }
+      if (grid.every(cell => cell !== null)) {
+        return 'TIE';
+      }
+      return null;
+    }
+
+    // Processa o clique em uma célula
+    function handleCellClick(boardIdx, cellIdx) {
+      if (!isGameActive) return;
+
+      // Validação 1: O mini-tabuleiro já foi conquistado/empatado?
+      if (subBoardWinners[boardIdx] !== null) return;
+
+      // Validação 2: A célula já está preenchida?
+      if (boards[boardIdx][cellIdx] !== null) return;
+
+      // Executa a jogada na célula
+      boards[boardIdx][cellIdx] = currentPlayer;
+
+      // Verifica se o mini-tabuleiro foi vencido após essa jogada
+      const subWinner = checkGridWinner(boards[boardIdx]);
+      if (subWinner) {
+        subBoardWinners[boardIdx] = subWinner;
+      }
+
+      // Verifica se o JOGO PRINCIPAL foi vencido
+      const mainWinner = checkGridWinner(subBoardWinners);
+
+      if (mainWinner) {
+        // Fim de Jogo!
+        handleGameOver(mainWinner);
+      } else {
+        // Alterna o jogador para a próxima rodada (Livre escolha mantida!)
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        updateTurnBadge();
+        renderBoard();
+      }
+    }
+
+    // Trata o encerramento do jogo (Vitória ou Empate)
+    function handleGameOver(winner) {
+      isGameActive = false;
+      stopTimer();
+      renderBoard();
+
+      // Aguarda um pequeno instante para atualização visual antes da tela de vitória
+      setTimeout(() => {
+        const victoryTitle = document.getElementById('victoryTitle');
+        const victoryMessage = document.getElementById('victoryMessage');
+        const victoryTimeText = document.getElementById('victoryTimeText');
+
+        victoryTimeText.textContent = getFormattedDurationText(secondsElapsed);
+
+        if (winner === 'TIE') {
+          victoryTitle.textContent = 'Partida Empatada!';
+          victoryTitle.className = 'text-3xl md:text-4xl font-extrabold text-amber-400 mb-2';
+          victoryMessage.innerHTML = 'Nenhum dos jogadores conseguiu formar uma trinca nos mini-tabuleiros.';
+        } else {
+          const winnerName = players[winner];
+          const isX = winner === 'X';
+          
+          victoryTitle.textContent = '🎉 Parabéns!';
+          victoryTitle.className = `text-3xl md:text-4xl font-extrabold mb-2 ${isX ? 'text-red-400' : 'text-cyan-400'}`;
+          
+          victoryMessage.innerHTML = `
+            <span class="${isX ? 'text-red-400' : 'text-cyan-400'} font-bold">${winnerName}</span> 
+            venceu o Jogo da Velha Fractal!
+          `;
+
+          // Dispara confetes se houver um vencedor
+          triggerConfetti();
+        }
+
+        showScreen('victoryScreen');
+      }, 400);
+    }
+
+    // Efeito de Confetes na Vitória
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    // --- RENDERIZAÇÃO DA INTERFACE DO TABULEIRO ---
+
+    function updateTurnBadge() {
+      const badge = document.getElementById('turnBadge');
+      const isX = currentPlayer === 'X';
+      const name = players[currentPlayer];
+
+      if (isX) {
+        badge.className = 'px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-2';
+        badge.innerHTML = `<span class="w-3 h-3 rounded-full bg-red-500 inline-block animate-ping"></span> ${name} (X)`;
+      } else {
+        badge.className = 'px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center gap-2';
+        badge.innerHTML = `<span class="w-3 h-3 rounded-full bg-cyan-500 inline-block animate-ping"></span> ${name} (O)`;
+      }
+    }
+
+    function renderBoard() {
+      const mainBoard = document.getElementById('mainBoard');
+      mainBoard.innerHTML = '';
+
+      for (let b = 0; b < 9; b++) {
+        // Container do Sub-Tabuleiro 3x3
+        const subBoardContainer = document.createElement('div');
+        subBoardContainer.className = 'relative bg-slate-950 p-1 rounded-xl grid grid-cols-3 gap-1 border border-slate-800/80 shadow-inner overflow-hidden';
+
+        const subWinner = subBoardWinners[b];
+
+        // Renderiza as 9 células do sub-tabuleiro
+        for (let c = 0; c < 9; c++) {
+          const cellVal = boards[b][c];
+          const cellBtn = document.createElement('button');
+          
+          cellBtn.className = 'aspect-square bg-slate-900 hover:bg-slate-800/80 disabled:hover:bg-slate-900 rounded-md flex items-center justify-center font-black text-sm sm:text-xl transition-all duration-150 outline-none select-none';
+
+          if (cellVal === 'X') {
+            cellBtn.innerHTML = '<span class="text-red-500">X</span>';
+          } else if (cellVal === 'O') {
+            cellBtn.innerHTML = '<span class="text-cyan-400">O</span>';
+          }
+
+          // A regra de livre escolha permite clicar em qualquer célula vazia
+          // de qualquer sub-tabuleiro que ainda não foi vencido/empatado
+          const isDisabled = !isGameActive || subWinner !== null || cellVal !== null;
+          cellBtn.disabled = isDisabled;
+
+          if (!isDisabled) {
+            cellBtn.addEventListener('click', () => handleCellClick(b, c));
+          }
+
+          subBoardContainer.appendChild(cellBtn);
+        }
+
+        // Overlay em caso de vitória/empate no sub-tabuleiro
+        if (subWinner) {
+          const overlay = document.createElement('div');
+          overlay.className = 'absolute inset-0 bg-slate-950/90 backdrop-blur-[2px] flex items-center justify-center font-black text-4xl sm:text-5xl animate-pop z-10';
+
+          if (subWinner === 'X') {
+            overlay.innerHTML = '<span class="text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.5)]">X</span>';
+          } else if (subWinner === 'O') {
+            overlay.innerHTML = '<span class="text-cyan-400 drop-shadow-[0_0_12px_rgba(6,182,212,0.5)]">O</span>';
+          } else {
+            overlay.innerHTML = '<span class="text-slate-500 text-sm sm:text-base font-bold">EMPATE</span>';
+          }
+
+          subBoardContainer.appendChild(overlay);
+        }
+
+        mainBoard.appendChild(subBoardContainer);
+      }
+    }
+
+    // --- REINICIAR PARTIDA ---
+    function resetGameSamePlayers() {
+      initGameState();
+      showScreen('gameScreen');
+      startTimer();
+      renderBoard();
+      updateTurnBadge();
+    }
+
+    function restartGameToSetup() {
+      stopTimer();
+      showScreen('startScreen');
+    }
+  </script>
+</body>
+</html>
